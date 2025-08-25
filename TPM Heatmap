@@ -1,0 +1,90 @@
+# Set working directory
+setwd("/Volumes/LaCie/MhlangaLaboratory/Its Getting Salty/RNAseq/Inputs")
+
+# Load libraries
+library(ggplot2)
+library(pheatmap)
+library(dplyr)
+library(tibble) 
+
+# Read TPM data
+tpmHM = read.delim("GRCh38-TPM.tsv", header = TRUE, row.names = 1, sep = "\t")
+tpmHM.df = as.data.frame(tpmHM)
+rownames(tpmHM.df) <- sub("\\..*", "", rownames(tpmHM.df))
+tpmHM.df <- tpmHM.df[!duplicated(row.names(tpmHM.df)), ]
+tpmHM.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(tpmHM.df), keytype = "ENSEMBL", column = "SYMBOL", multiVals = "first")
+tpmHM = tpmHM.df
+
+# Keep only genes with valid symbols
+rownames(tpmHM) = NULL
+tpmHM <- as.data.frame(tpmHM)
+tpmHM <- tpmHM[!is.na(tpmHM$symbol), ]
+tpmHM <- tpmHM %>%
+  filter(!duplicated(symbol)) %>%
+  column_to_rownames("symbol")
+
+# Define gene list (no CSV needed)
+gene_list <- c("VDAC1", "SOD2", "SOD1")
+
+#"SQSTM1", "NFE2L2", "BECN1", "TRAF6", "SOD2", "RBX1", "KEAP1", "OPA1", "RHOT1", "MAP1LC3B", "OPTN", "PRKN", "PINK1", "MAVL", "TANK", "TBK1", "IKBKE", "IRF7", "IRF3", "STING", "CGAS", "RGMA", "RANBP3L", "CH25H", "SLC5A3", "MRPS6", "SHC3", "SLC6A12"
+# Filter TPM data based on gene list
+gene_list_tpm <- tpmHM[rownames(tpmHM) %in% gene_list, ]
+
+# Order columns
+desired_order <- c("control_0h_A", "control_0h_B", "control_0h_C",
+                   "control_4h_A", "control_4h_B", "control_4h_C",
+                   "salt_4h_A", "salt_4h_B", "salt_4h_C",
+                   "control_24h_A", "control_24h_B", "control_24h_C",
+                   "salt_24h_A", "salt_24h_B", "salt_24h_C")
+
+gene_list_tpm <- gene_list_tpm[, desired_order]
+
+# Remove genes with zero variance
+gene_list_tpm <- gene_list_tpm[apply(gene_list_tpm, 1, var) > 0, ]
+
+# Define column annotations
+column_annotation <- data.frame(
+  Group = rep(c("control_0h", "control_4h", "salt_4h", "control_24h", "salt_24h"), each = 3)
+)
+rownames(column_annotation) <- colnames(gene_list_tpm)
+
+# Check for missing or infinite values
+any(is.na(gene_list_tpm))  
+any(sapply(gene_list_tpm, is.nan))
+any(sapply(gene_list_tpm, is.infinite))
+
+# Generate heatmap
+log_gene_list_tpm <- log2(gene_list_tpm + 1)
+
+heat_map <- pheatmap(
+  as.matrix(log_gene_list_tpm),
+  cluster_rows = TRUE,
+  cluster_cols = FALSE,
+  scale = "z-factor",
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  color = viridis(100),
+  labels_row = rownames(log_gene_list_tpm),
+  labels_col = colnames(log_gene_list_tpm),
+  main = "Chemokines and IFN-I",
+  fontsize = 10,
+  cellwidth = 25,
+  cellheight = 15,
+  display_number = FALSE,
+  border_color = "black",
+  legend_breaks = seq(min(log_gene_list_tpm), max(log_gene_list_tpm), length.out = 5),
+  legend_labels = round(seq(min(log_gene_list_tpm), max(log_gene_list_tpm), length.out = 5), 1),
+  angle_col = "45",
+  annotation_col = column_annotation,
+  annotation_colors = list(Group = c(
+    "control_0h" = "olivedrab1",
+    "control_4h" = "darkorchid1",
+    "salt_4h" = "seagreen1",
+    "control_24h" = "royalblue4",
+    "salt_24h" = "salmon"
+  ))
+)
+
+
+gene_list_tpm
+print(heat_map)
