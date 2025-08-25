@@ -1,0 +1,126 @@
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")    # Install the BiocManager helper package
+}
+
+# 2. Use BiocManager to install DESeq2 from Bioconductor
+BiocManager::install("DESeq2")       # Installs DESeq2 and its dependencies
+
+library("DESeq2")
+library(ggplot2)
+library(SummarizedExperiment)  # ensures colData() and DataFrame() are available
+
+library("org.Hs.eg.db")
+library("AnnotationDbi")
+
+setwd("/Users/yordanov/Desktop/Mhlanga Laboratory/Its Getting Salty/RNAseq/Inputs")
+
+Counts_salt = h5_file <- file.choose()
+Counts_salt = read.delim(Counts_salt, header = TRUE, row.names = 1, sep = "\t")
+Counts_salt <- read.delim(file.choose(), header = TRUE, row.names = 1, sep = "\t")
+
+Counts_salt = Counts_salt[which(rowSums(Counts_salt) > 50),]
+Counts_salt
+condition = factor(c("Control_0h", "Control_0h", "Control_0h", "Control_4h", "Salt_4h", "Control_4h", "Salt_4h", "Control_4h", "Salt_4h", "Control_24h", "Salt_24h", "Control_24h", "Salt_24h", "Control_24h", "Salt_24h"))
+
+replicate = factor(c("Control_0h_A", "Control_0h_B", "Control_0h_C", "Control_4h_A", "Salt_4h_A", "Control_4h_B", "Salt_4h_B", "Control_4h_C", "Salt_4h_C", "Control_24h_A", "Salt_24h_A", "Control_24h_B", "Salt_24h_B", "Control_24h_C", "Salt_24h_C"))
+
+coldata <- data.frame(row.names = colnames(Counts_salt), condition)
+
+#coldata$replicate = c(replicate)
+
+coldata
+
+dds <- DESeqDataSetFromMatrix(countData = Counts_salt, colData = coldata, design = ~condition)
+
+dds <- estimateSizeFactors(dds)
+idx <- rowSums(counts(dds, normalized = TRUE) >= 5) >= 3
+dds <- dds[idx, ]
+dds <- DESeq(dds)
+
+vsdata <- vst(dds, blind=FALSE)
+
+
+PCA_condition <- plotPCA(vsdata, intgroup = "condition")
+plotDispEsts(dds)
+
+PCA_condition + labs(title = "4h and 24h Salt RNAseq - PCA Plot")
+```
+
+
+```{r}
+
+Salt4h_vs_Control4h = results(dds, contrast = c("condition", "Salt_4h", "Control_4h"))
+Salt4h_vs_Control4h.df = as.data.frame(Salt4h_vs_Control4h)
+rownames(Salt4h_vs_Control4h.df) <- sub("\\..*", "", rownames(Salt4h_vs_Control4h.df))
+Salt4h_vs_Control4h.df <- Salt4h_vs_Control4h.df[!duplicated(row.names(Salt4h_vs_Control4h.df)), ]
+Salt4h_vs_Control4h.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(Salt4h_vs_Control4h.df), keytype = "ENSEMBL", column = "SYMBOL", multiVals = "first")
+Salt4h_vs_Control4h = Salt4h_vs_Control4h.df
+Salt4h_vs_Control4hClean = na.omit(Salt4h_vs_Control4h)
+Salt4h_vs_Control4hClean = Salt4h_vs_Control4hClean[Salt4h_vs_Control4hClean$padj < 0.05,]
+Salt4h_vs_Control4hClean <- Salt4h_vs_Control4hClean[Salt4h_vs_Control4hClean$log2FoldChange > 0, ]
+Salt4h_vs_Control4hClean <- Salt4h_vs_Control4hClean[Salt4h_vs_Control4hClean$log2FoldChange < 0, ]
+write.csv(Salt4h_vs_Control4hClean, file = "Salt4h_vs_Control4hClean_UP.csv")
+
+writeLines(Salt4h_vs_Control4hClean$symbol, "Salt4h_vs_Control4hClean_DOWN.txt")
+
+```
+
+```{r}
+Salt24h_vs_Control24h = results(dds, contrast = c("condition", "Salt_24h", "Control_24h"))
+Salt24h_vs_Control24h.df = as.data.frame(Salt24h_vs_Control24h)
+rownames(Salt24h_vs_Control24h.df) <- sub("\\..*", "", rownames(Salt24h_vs_Control24h.df))
+Salt24h_vs_Control24h.df <- Salt24h_vs_Control24h.df[!duplicated(row.names(Salt24h_vs_Control24h.df)), ]
+Salt24h_vs_Control24h.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(Salt24h_vs_Control24h.df), keytype = "ENSEMBL", column = "SYMBOL", multiVals = "first")
+Salt24h_vs_Control24h = Salt24h_vs_Control24h.df
+Salt24h_vs_Control24hClean = na.omit(Salt24h_vs_Control24h)
+Salt24h_vs_Control24hClean = Salt24h_vs_Control24hClean[Salt24h_vs_Control24hClean$padj < 0.05,]
+Salt24h_vs_Control24hClean <- Salt24h_vs_Control24hClean[Salt24h_vs_Control24hClean$log2FoldChange > 0, ]
+Salt24h_vs_Control24hClean <- Salt24h_vs_Control24hClean[Salt24h_vs_Control24hClean$log2FoldChange < 0, ]
+write.csv(Salt24h_vs_Control24hClean, file = "Salt24h_vs_Control24hClean_DOWN.csv")
+
+getwd()
+
+writeLines(Salt24h_vs_Control24hClean$symbol, "Salt24h_vs_Control24hClean_DOWN.txt")
+
+
+```
+
+```{r}
+Salt24h_vs_Salt4h = results(dds, contrast = c("condition", "Salt_24h", "Salt_4h"))
+Salt24h_vs_Salt4h.df = as.data.frame(Salt24h_vs_Salt4h)
+rownames(Salt24h_vs_Salt4h.df) <- sub("\\..*", "", rownames(Salt24h_vs_Salt4h.df))
+Salt24h_vs_Salt4h.df <- Salt24h_vs_Salt4h.df[!duplicated(row.names(Salt24h_vs_Salt4h.df)), ]
+Salt24h_vs_Salt4h.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(Salt24h_vs_Salt4h.df), keytype = "ENSEMBL", column = "SYMBOL", multiVals = "first")
+Salt24h_vs_Salt4h = Salt24h_vs_Salt4h.df
+Salt24h_vs_Salt4hClean = na.omit(Salt24h_vs_Salt4h)
+Salt24h_vs_Salt4hClean = Salt24h_vs_Salt4hClean[Salt24h_vs_Salt4hClean$padj < 0.05,]
+Salt24h_vs_Salt4hClean_UP <- Salt24h_vs_Salt4hClean[Salt24h_vs_Salt4hClean$log2FoldChange >= 1, ]
+Salt24h_vs_Salt4hClean_DOWN <- Salt24h_vs_Salt4hClean[Salt24h_vs_Salt4hClean$log2FoldChange <= (-1), ]
+write.csv(Salt24h_vs_Salt4hClean_DOWN, file = "Salt24h_vs_Salt4hClean_DOWN.csv")
+
+
+```
+
+
+```{r}
+Control24h_vs_Control4h = results(dds, contrast = c("condition", "Control_24h", "Control_4h"))
+Control24h_vs_Control4h.df = as.data.frame(Control24h_vs_Control4h)
+rownames(Control24h_vs_Control4h.df) <- sub("\\..*", "", rownames(Control24h_vs_Control4h.df))
+Control24h_vs_Control4h.df <- Control24h_vs_Control4h.df[!duplicated(row.names(Control24h_vs_Control4h.df)), ]
+Control24h_vs_Control4h.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(Control24h_vs_Control4h.df), keytype = "ENSEMBL", column = "SYMBOL", multiVals = "first")
+Control24h_vs_Control4h = Control24h_vs_Control4h.df
+Control24h_vs_Control4hClean = na.omit(Control24h_vs_Control4h)
+Control24h_vs_Control4hClean = Control24h_vs_Control4hClean[Control24h_vs_Control4hClean$padj < 0.05,]
+Control24h_vs_Control4hClean_UP <- Control24h_vs_Control4hClean[Control24h_vs_Control4hClean$log2FoldChange >= 1, ]
+Control24h_vs_Control4hClean_DOWN <- Control24h_vs_Control4hClean[Control24h_vs_Control4hClean$log2FoldChange <= (-1), ]
+write.csv(Control24h_vs_Control4hClean, file = "Control24h_vs_Control4hClean.csv")
+
+
+
+
+
+
+
+
+```
