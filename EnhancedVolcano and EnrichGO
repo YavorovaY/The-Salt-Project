@@ -1,0 +1,95 @@
+```{r}
+library(ggrepel)
+library(EnhancedVolcano)
+
+
+
+# Step 6: Plot
+Salt4h_vs_Control4h_Volcano <- EnhancedVolcano(
+  Salt4h_vs_Control4h,
+  lab = Salt4h_vs_Control4h$symbol,
+  x = "log2FoldChange",
+  y = "padj",
+  ylim = c(0, 60),
+  ylab = bquote(~Log[10]~ 'p-Adj'),
+  xlab = bquote(~Log[2]~ 'FC'),
+  title = "Salt_4h vs Control_4h",
+  subtitle = "Top Up/Down Regulated Genes",
+  pCutoff = 0.05,
+  FCcutoff = 1,
+  drawConnectors = TRUE,
+  widthConnectors = 0.25,
+  maxoverlapsConnectors = 100,
+  selectLab = c("ITGA6", "TRIM25", "SLC6A12", "SLC5A3", "TNFRSF10D", "SLC38A2", "PIK3AP1", "B4GALT5", "SUGT1P3", "CFLAR", "MRPS6", "RGMA", "RANBP3L", "NHSL2", "ADAP2", "FLVCR2","IRF2BP2", "PTAFR", "MTMR4", "TGFBI", "PVT1", "MRPL3", "ZNF777", "SVIL-AS1", "ZNF561", "SLCO2B1", "STOML1")
+)
+
+
+Salt4h_vs_Control4h_Volcano
+
+
+Salt4h_vs_Control4hClean_GO = Salt4h_vs_Control4hClean$symbol
+Salt4h_vs_Control4hClean_GO_Results = enrichGO(
+  gene = Salt4h_vs_Control4hClean_GO,
+  OrgDb = org.Hs.eg.db,
+  keyType = "SYMBOL",
+  ont = "BP",
+  pAdjustMethod = "BH",
+  pvalueCutoff = 0.05,
+  qvalueCutoff = 0.2
+)
+
+slat4h_godot = dotplot(Salt4h_vs_Control4hClean_GO_Results, showCategory=20) + ggtitle(" Top 20 Enriched GO Biological Processes for 4h Salt vs 4h Control")
+
+
+slat4h_godot
+
+
+
+```
+
+```{r}
+library(clusterProfiler)
+library(org.Hs.eg.db)  # for human gene annotation
+
+
+# Step 6: Plot
+Salt24h_vs_Control24h_Volcano <- EnhancedVolcano(
+  Salt24h_vs_Control24h,
+  lab = Salt24h_vs_Control24h$symbol,
+  x = "log2FoldChange",
+  y = "padj",
+  ylim = c(0, 40),
+  ylab = bquote(~Log[10]~ 'p-Adj'),
+  xlab = bquote(~Log[2]~ 'FC'),
+  title = "Salt_24h vs Control_24h",
+  subtitle = "Top Up/Down Regulated Genes",
+  pCutoff = 0.05,
+  FCcutoff = 1,
+  drawConnectors = TRUE,
+  widthConnectors = 0.25,
+  maxoverlapsConnectors = 100,
+  selectLab = c("FXYD6", "ALDH1A2", "IRAK2", "SIGLEC1", "ITGA6", "MARCO", "H1-0", "LY6E", "IFI44L", "DDX60L", "SLC5A3", "IFIT1", "RANBP3L", "RSAD2", "SLC16A10", "COL23A1", "HLA-DRA", "RGS2", "H2BC8", "MMP7", "HSPA2", "RPS27", "PAPSS2", "ID1", "ADGRE3", "PDK4", "VNN2")
+)
+
+
+Salt24h_vs_Control24h_Volcano
+
+Salt24h_vs_Control24hClean_GO = Salt24h_vs_Control24hClean$symbol
+Salt24h_vs_Control24hClean_GO_Results = enrichGO(
+  gene = Salt24h_vs_Control24hClean_GO,
+  OrgDb = org.Hs.eg.db,
+  keyType = "SYMBOL",
+  ont = "BP",
+  pAdjustMethod = "BH",
+  pvalueCutoff = 0.05,
+  qvalueCutoff = 0.2
+)
+
+slat24h_godot = dotplot(Salt24h_vs_Control24hClean_GO_Results, showCategory=20) + ggtitle(" Top 20 Enriched GO Biological Processes for 24h Salt vs 24h Control")
+
+
+slat24h_godot
+
+
+
+```
