@@ -1,0 +1,6 @@
+## The basic HOMER setup were used without any custom adjustments.
+
+findMotifs.pl <inputfile.txt> <promoter set> <output directory> [options]
+findMotifs.pl 4hSaltvsControl_Upregulated.txt mouse HomerResults/
+
+## As no options were specified HOMER looked for motifs with size between 8 and 12 base pairs on both foreward and reverse strands. Also the range of analysis is 1000 basepairs upstream from the TSS and 100 basepairs downstream from the TSS.
