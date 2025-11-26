@@ -4,3 +4,52 @@ findMotifs.pl <inputfile.txt> <promoter set> <output directory> [options]
 findMotifs.pl 4hSaltvsControl_Upregulated.txt mouse HomerResults/
 
 ## As no options were specified HOMER looked for motifs with size between 8 and 12 base pairs on both foreward and reverse strands. Also the range of analysis is 1000 basepairs upstream from the TSS and 100 basepairs downstream from the TSS.
+
+
+#### To get which genes for each transcription factor run the enrichment:
+
+
+
+
+
+
+cd /scratch/mozturk/homer_nam/pool/output_promoter_motifs
+# Go to the HOMER output directory that contains knownResults/
+
+GENES=/scratch/mozturk/homer_nam/pool/merged_genes_unique.txt
+# Full path to your input gene list (one gene per line)
+
+mkdir -p genes_per_motif
+# Folder to store per-motif gene tables
+
+for MOTIF in knownResults/*.motif
+# Loop over every Known Motif file in knownResults/ (known1.motif, known2.motif, ...)
+do
+    BASE=$(basename "$MOTIF" .motif)
+    # Strip path and .motif extension → e.g. known25.motif → "known25"
+
+    TMP=genes_per_motif/${BASE}_with_annotation.tmp.txt
+    # Temporary file: full annotation for this motif (only your genes, with 0/>0 hits)
+
+    OUT=genes_per_motif/${BASE}_genes_with_motif.txt
+    # Final file: only genes from your list that actually have ≥1 motif occurrence
+
+    annotatePeaks.pl tss mm10 -list "$GENES" -m "$MOTIF" > "$TMP"
+    # Explanation:
+    # - 'tss'         → use transcription start sites as "peaks" (promoter-centric)
+    # - 'mm10'        → use the mm10 genome (you have this installed)
+    # - '-list $GENES'→ restrict TSS/promoters to genes present in merged_genes_unique.txt
+    # - '-m $MOTIF'   → compute motif hits for this specific motif (e.g. known25.motif)
+    # - Output        → one row per gene in your list, with motif hit count in the last column
+
+    awk 'NR==1 || $NF > 0' "$TMP" > "$OUT"
+    # Explanation:
+    # - 'NR==1'   → keep the header line
+    # - '$NF > 0' → keep only rows where the LAST column (motif hit count) is > 0
+    #               (annotatePeaks.pl with -m puts motif hits in the last column)
+    # - Result    → OUT file contains only genes from your list that actually have the motif
+
+    rm "$TMP"
+    # Remove the temporary full annotation file to keep the directory clean
+done
+# End of loop over all Known Motifs
